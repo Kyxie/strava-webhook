@@ -1,7 +1,23 @@
-FROM node:18
+FROM node:18-alpine
+
+# Set working directory
 WORKDIR /app
+
+# Install bash (alpine only comes with ash by default)
+RUN apk add --no-cache bash
+
+# Install dependencies
 COPY package.json ./
 RUN npm install
+
+# Copy all source files including update.sh
 COPY . .
+
+# Ensure update.sh is executable
+RUN chmod +x update.sh
+
+# Expose webhook port
 EXPOSE 8001
+
+# Start the app
 CMD ["npm", "start"]
