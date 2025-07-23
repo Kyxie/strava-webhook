@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^17.2.0",
+    "axios": "^1.11.0",
     "express": "^5.1.0"
   }
 }

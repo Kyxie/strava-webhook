@@ -9,10 +9,10 @@ exec_in_app() {
   $DOCKER_COMPOSE exec -T app "$@"
 }
 
-echo "⏳ Importing latest Strava activities..."
+echo "[Update.sh] Importing latest Strava activities..."
 exec_in_app bin/console app:strava:import-data
 
-echo "🛠 Building files..."
+echo "[Update.sh] Building files..."
 exec_in_app bin/console app:strava:build-files
 
-echo "✅ Update complete."
+echo "[Update.sh] Update complete."
