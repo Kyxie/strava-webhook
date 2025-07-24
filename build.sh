@@ -1,1 +1,0 @@
-docker buildx build --platform linux/amd64 -t kyxie/strava-webhook:latest --push .
