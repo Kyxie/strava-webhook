@@ -44,9 +44,9 @@ router.post('/', (req, res) => {
       try {
         await runCommand('docker exec strava bin/console app:strava:import-data');
         await runCommand('docker exec strava bin/console app:strava:build-files');
-        console.log('[Webhook] ✅ Strava update complete.');
+        console.log('[Webhook] Strava update complete.');
       } catch (err) {
-        console.error('[Webhook] ❌ Strava update failed.');
+        console.error('[Webhook] Strava update failed.');
       }
     })();
   }
