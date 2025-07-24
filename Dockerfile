@@ -13,9 +13,6 @@ RUN npm install
 # Copy all source files including update.sh
 COPY . .
 
-# Ensure update.sh is executable
-RUN chmod +x update.sh
-
 # Expose webhook port
 EXPOSE 8001
 
