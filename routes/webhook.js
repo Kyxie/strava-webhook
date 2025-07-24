@@ -1,15 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const STRAVA_VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN;
 
 router.get('/', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+  if (mode === 'subscribe' && token === STRAVA_VERIFY_TOKEN) {
     console.log('[Webhook] Verified successfully');
-    return res.json({ hub: { challenge } });
+    
+    let response = {};
+    response["hub.challenge"] = challenge;
+    
+    return res.status(200).json(response);
   } else {
     console.warn('[Webhook] Verification failed');
     return res.status(403).send('Forbidden');

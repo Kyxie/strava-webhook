@@ -5,8 +5,8 @@ const router = express.Router();
 const {
   STRAVA_CLIENT_ID,
   STRAVA_CLIENT_SECRET,
-  CALLBACK_URL,
-  VERIFY_TOKEN
+  STRAVA_CALLBACK_URL,
+  STRAVA_VERIFY_TOKEN
 } = process.env;
 
 const apiUrl = 'https://www.strava.com/api/v3/push_subscriptions';
@@ -49,8 +49,8 @@ router.post('/register', async (req, res) => {
       params: {
         client_id: STRAVA_CLIENT_ID,
         client_secret: STRAVA_CLIENT_SECRET,
-        callback_url: CALLBACK_URL,
-        verify_token: VERIFY_TOKEN
+        callback_url: STRAVA_CALLBACK_URL,
+        verify_token: STRAVA_VERIFY_TOKEN
       }
     });
 
