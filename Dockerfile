@@ -1,8 +1,8 @@
-FROM node:18
+FROM node:18-alpine
 
 WORKDIR /app
 
-RUN apt update && apt install -y curl
+RUN apk add --no-cache curl libc6-compat
 
 RUN curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz | tar xz && \
     mv docker/docker /usr/bin/docker && \
