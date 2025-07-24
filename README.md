@@ -5,4 +5,4 @@ A Strava webhook listener that automatically updates activity data by triggering
 -   DockerHub: https://hub.docker.com/repository/docker/kyxie/strava-webhook/general
 -   How to use
     -   Chinese: https://kyxie.me/zh/blog/bike/strava/
-
+    -   English: https://kyxie.me/en/blog/bike/strava/
