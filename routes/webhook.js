@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const STRAVA_VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN;
+const { exec } = require('child_process');
 
 router.get('/', (req, res) => {
   const mode = req.query['hub.mode'];
@@ -26,14 +27,28 @@ router.post('/', (req, res) => {
   if (event.object_type === 'activity' && event.event_type === 'create') {
     console.log(`[Webhook] Received new activity: ${event.object_id}`);
 
-    const { exec } = require('child_process');
-    exec('./update.sh', (err, stdout, stderr) => {
-      if (err) {
-        console.error('[Webhook] Error executing update.sh:', stderr);
-        return;
+    const runCommand = (cmd) => {
+      return new Promise((resolve, reject) => {
+        exec(cmd, (err, stdout, stderr) => {
+          if (err) {
+            console.error(`[Webhook] Command failed: ${cmd}\n${stderr}`);
+            return reject(err);
+          }
+          console.log(`[Webhook] Command succeeded: ${cmd}\n${stdout}`);
+          resolve(stdout);
+        });
+      });
+    };
+
+    (async () => {
+      try {
+        await runCommand('docker exec strava bin/console app:strava:import-data');
+        await runCommand('docker exec strava bin/console app:strava:build-files');
+        console.log('[Webhook] ✅ Strava update complete.');
+      } catch (err) {
+        console.error('[Webhook] ❌ Strava update failed.');
       }
-      console.log('[Webhook] update.sh output:', stdout);
-    });
+    })();
   }
 
   res.sendStatus(200);
