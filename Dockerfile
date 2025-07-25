@@ -1,21 +1,25 @@
-FROM node:18-alpine
+# -------- Build Stage --------
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache curl libc6-compat
-
-RUN curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz | tar xz && \
-    mv docker/docker /usr/bin/docker && \
-    chmod +x /usr/bin/docker && \
-    rm -rf docker
-
-COPY package*.json ./
-RUN npm install
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
 
-VOLUME /var/run/docker.sock
+RUN go build -o app .
+
+# -------- Final Stage --------
+FROM alpine:latest
+
+# Install Docker CLI
+RUN apk add --no-cache docker-cli
+
+WORKDIR /app
+
+COPY --from=builder /app/app .
 
 EXPOSE 8001
 
-CMD ["npm", "start"]
+CMD ["./app"]

@@ -1,4 +1,37 @@
-node_modules
-.env
+# Ignore the Go build output
+/bin
+/build
+/dist
+*.exe
+*.out
+*.test
+
+# Ignore local dependency cache
+/vendor
+
+# Ignore Git repository data
 .git
+.gitignore
+
+# Ignore editor and IDE files
+*.swp
+*.bak
+*.tmp
+*.old
+.idea/
+.vscode/
+
+# Ignore OS-specific metadata
+.DS_Store
+Thumbs.db
+
+# Ignore logs
 *.log
+
+# Ignore environment config
+.env
+.env.*
+
+# Ignore Docker-related files not needed in image
+.dockerignore
+docker-compose.yml
