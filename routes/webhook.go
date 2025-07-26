@@ -31,7 +31,9 @@ func WebhookHandle(c *gin.Context) {
 		return
 	}
 
-	if event["object_type"] == "activity" && event["event_type"] == "create" {
+	log.Printf("[Webhook] Received payload: %+v\n", event)
+
+	if event["object_type"] == "activity" && event["aspect_type"] == "create" {
 		log.Printf("[Webhook] New activity received: %v\n", event["object_id"])
 
 		go func() {
