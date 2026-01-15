@@ -53,13 +53,19 @@ func WebhookHandle(c *gin.Context) {
 	if event["object_type"] == "activity" && event["aspect_type"] == "create" {
 		log.Printf("[Webhook] New activity received: %v\n", event["object_id"])
 
+		app := os.Getenv("APP_NAME")
+		if app == "" {
+			app = "strava"
+		}
+		labelSelector := fmt.Sprintf("app=%s", app)
+
 		go func() {
-			err := execInPod("app=strava-stats", []string{"bin/console", "app:strava:import-data"})
+			err := execInPod(labelSelector, []string{"bin/console", "app:strava:import-data"})
 			if err != nil {
 				log.Println("[K8s] import-data failed:", err)
 				return
 			}
-			err = execInPod("app=strava-stats", []string{"bin/console", "app:strava:build-files"})
+			err = execInPod(labelSelector, []string{"bin/console", "app:strava:build-files"})
 			if err != nil {
 				log.Println("[K8s] build-files failed:", err)
 				return
@@ -77,9 +83,9 @@ func execInPod(labelSelector string, command []string) error {
 		return fmt.Errorf("failed to get k8s client: %v", err)
 	}
 
-	namespace := os.Getenv("NAMESPACE")
+	namespace := os.Getenv("TARGET_NAMESPACE")
 	if namespace == "" {
-		namespace = "strava"
+		namespace = "default"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -89,7 +95,7 @@ func execInPod(labelSelector string, command []string) error {
 		LabelSelector: labelSelector,
 	})
 	if err != nil || len(pods.Items) == 0 {
-		return fmt.Errorf("pod not found with label %s", labelSelector)
+		return fmt.Errorf("pod not found in namespace '%s' with label '%s'", namespace, labelSelector)
 	}
 	targetPod := pods.Items[0]
 
