@@ -53,7 +53,7 @@ func WebhookHandle(c *gin.Context) {
 	if event["object_type"] == "activity" && event["aspect_type"] == "create" {
 		log.Printf("[Webhook] New activity received: %v\n", event["object_id"])
 
-		app := os.Getenv("APP_NAME")
+		app := os.Getenv("APP")
 		if app == "" {
 			app = "strava"
 		}
@@ -83,7 +83,7 @@ func execInPod(labelSelector string, command []string) error {
 		return fmt.Errorf("failed to get k8s client: %v", err)
 	}
 
-	namespace := os.Getenv("TARGET_NAMESPACE")
+	namespace := os.Getenv("NAMESPACE")
 	if namespace == "" {
 		namespace = "default"
 	}

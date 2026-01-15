@@ -13,7 +13,7 @@ A Strava webhook listener that automatically updates activity data by triggering
 
 - Chinese toturial: [使用Docker部署Strava数据分析面板 | Kunyang's Blog](https://kyxie.me/zh/blog/bike/strava/#同步)
 
-- Modify your `.env`
+- Modify your `.env`，for k8s users, save these information to `secret.yaml`
 
   ```python
   # The client id of your Strava app.
@@ -34,6 +34,8 @@ A Strava webhook listener that automatically updates activity data by triggering
   # Webhook
   STRAVA_VERIFY_TOKEN=YOUR_VERIFY_TOKEN
   STRAVA_CALLBACK_URL=YOUR_STRAVA_CALLBACK_URL
+  APP=strava
+  NAMESPACE=strava
   ```
 
 - Create a `verify token` by using command below，then save this token to `.env`
