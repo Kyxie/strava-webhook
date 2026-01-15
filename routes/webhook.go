@@ -1,12 +1,20 @@
 package routes
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/kubectl/pkg/scheme"
 )
 
 func WebhookVerify(c *gin.Context) {
@@ -23,6 +31,15 @@ func WebhookVerify(c *gin.Context) {
 	}
 }
 
+func getK8sClient() (*kubernetes.Clientset, *rest.Config, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	return clientset, config, err
+}
+
 func WebhookHandle(c *gin.Context) {
 	var event map[string]interface{}
 	if err := c.BindJSON(&event); err != nil {
@@ -37,12 +54,14 @@ func WebhookHandle(c *gin.Context) {
 		log.Printf("[Webhook] New activity received: %v\n", event["object_id"])
 
 		go func() {
-			if err := run("docker", "exec", "strava", "bin/console", "app:strava:import-data"); err != nil {
-				log.Println("[Webhook] import-data failed:", err)
+			err := execInPod("app=strava-stats", []string{"bin/console", "app:strava:import-data"})
+			if err != nil {
+				log.Println("[K8s] import-data failed:", err)
 				return
 			}
-			if err := run("docker", "exec", "strava", "bin/console", "app:strava:build-files"); err != nil {
-				log.Println("[Webhook] build-files failed:", err)
+			err = execInPod("app=strava-stats", []string{"bin/console", "app:strava:build-files"})
+			if err != nil {
+				log.Println("[K8s] build-files failed:", err)
 				return
 			}
 			log.Println("[Webhook] Strava update complete")
@@ -52,13 +71,54 @@ func WebhookHandle(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func run(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	output, err := cmd.CombinedOutput()
+func execInPod(labelSelector string, command []string) error {
+	clientset, config, err := getK8sClient()
 	if err != nil {
-		log.Printf("[Command] %s %v failed\nOutput: %s\n", name, args, string(output))
-		return err
+		return fmt.Errorf("failed to get k8s client: %v", err)
 	}
-	log.Printf("[Command] %s %v succeeded\nOutput: %s\n", name, args, string(output))
+
+	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = "strava"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil || len(pods.Items) == 0 {
+		return fmt.Errorf("pod not found with label %s", labelSelector)
+	}
+	targetPod := pods.Items[0]
+
+	req := clientset.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(targetPod.Name).
+		Namespace(targetPod.Namespace).
+		SubResource("exec")
+
+	req.VersionedParams(&corev1.PodExecOptions{
+		Command: command,
+		Stdin:   false,
+		Stdout:  true,
+		Stderr:  true,
+		TTY:     false,
+	}, scheme.ParameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return fmt.Errorf("failed to init executor: %v", err)
+	}
+
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
+	if err != nil {
+		return fmt.Errorf("exec failed: %v", err)
+	}
+
 	return nil
 }

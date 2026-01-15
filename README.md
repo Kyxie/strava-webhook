@@ -1,3 +1,5 @@
+> Since strava webhook is supported by [statistics-for-strava](https://github.com/robiningelbrecht/statistics-for-strava), and I am changing stack to Kubernetes. This repo's `main` branch is for Kubernetes using. Check `docker` branch if deployed by docker compose.
+
 # Strava Webhook
 
 A Strava webhook listener that automatically updates activity data by triggering [statistics-for-strava](https://github.com/robiningelbrecht/statistics-for-strava) imports on new activities.
