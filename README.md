@@ -63,27 +63,27 @@ A Strava webhook listener that automatically updates activity data by triggering
       actor User as You
       participant Strava-Webhook
       participant Strava
-      participant Stats for Strava
+      participant Stats-for-Strava
   
       rect rgb(230, 240, 255)
           Note over User, Strava: Phase 1: Registration - One time
           
-          User->>GoApp: 1. curl POST /subscription/register
+          User->>Strava-Webhook: 1. curl POST /subscription/register
           Note right of User: Trigger register
           
-          GoApp->>Strava: 2. Request for estabilishing the subscription<br/>(with callback_url + verify token in request body)
+          Strava-Webhook->>Strava: 2. Request for estabilishing the subscription<br/>(with callback_url + verify token in request body)
           
           Note right of Strava: Strava receive the request and start to check<br/>your URL is valid or not
           
-          Strava->>GoApp: 3. GET /webhook?hub.verify_token=your_varify_token
+          Strava->>Strava-Webhook: 3. GET /webhook?hub.verify_token=your_varify_token
           
           alt Verify Token match?
-              GoApp-->>Strava: 4. Return hub.challenge (200 OK)
-              Note right of GoApp: Successful
-              Strava-->>GoApp: 5. Return JSON (Contains subscription id)
-              Note right of GoApp: Now we have the subscription id <br/> we don't use verify token any more
+              Strava-Webhook-->>Strava: 4. Return hub.challenge (200 OK)
+              Note right of Strava-Webhook: Successful
+              Strava-->>Strava-Webhook: 5. Return JSON (Contains subscription id)
+              Note right of Strava-Webhook: Now we have the subscription id <br/> we don't use verify token any more
           else Not match
-              GoApp-->>Strava: 403 Forbidden
+              Strava-Webhook-->>Strava: 403 Forbidden
               Note right of Strava: Failed
           end
       end
@@ -94,25 +94,25 @@ A Strava webhook listener that automatically updates activity data by triggering
           User->>Strava: 6. New activity
           Note right of User: Strava cloud generate event
           
-          Strava->>GoApp: 7. POST /webhook (JSON Payload)
+          Strava->>Strava-Webhook: 7. POST /webhook (JSON Payload)
           Note right of Strava: Now header has no verify token!<br/>Only subscription id in payload <br/> To prevent anyone from calling your /webhook endpoint, <br/> we will check subscription id here
           
           rect rgb(255, 230, 230)
-              Note over GoApp: Security Check
-              GoApp->>GoApp: Check 1:  owner id
-              GoApp->>GoApp: Check 2: subscription id
+              Note over Strava-Webhook: Security Check
+              Strava-Webhook->>Strava-Webhook: Check 1:  owner id
+              Strava-Webhook->>Strava-Webhook: Check 2: subscription id
           end
           
           alt ID Match
-              GoApp-->>Strava: 8. Return 200 OK
-              GoApp->>PHPApp: 9. kubectl exec
+              Strava-Webhook-->>Strava: 8. Return 200 OK
+              Strava-Webhook->>Stats-for-Strava: 9. kubectl exec
               
-              Note right of PHPApp: Import and building Stats for strava
-              PHPApp-->>Strava: 10. API GET /activities
+              Note right of Stats-for-Strava: Import and building Stats for strava
+              Stats-for-Strava-->>Strava: 10. API GET /activities
               
           else ID Not Match
-              GoApp-->>Strava: 200 OK
-              Note right of GoApp: Drop
+              Strava-Webhook-->>Strava: 200 OK
+              Note right of Strava-Webhook: Drop
           end
       end
   ```
