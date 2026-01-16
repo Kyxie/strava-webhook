@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -48,7 +49,35 @@ func WebhookHandle(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[Webhook] Received payload: %+v\n", event)
+	// log.Printf("[Webhook] Received payload: %+v\n", event)
+
+	// Validate ownerId
+	envOwnerID := os.Getenv("STRAVA_OWNER_ID")
+	var eventOwnerID string
+	if oid, ok := event["owner_id"].(float64); ok {
+		eventOwnerID = strconv.FormatFloat(oid, 'f', 0, 64)
+	} else if oidStr, ok := event["owner_id"].(string); ok {
+		eventOwnerID = oidStr
+	}
+	if envOwnerID != "" && eventOwnerID != envOwnerID {
+		log.Printf("[Security] Ignored event. Owner ID mismatch. Expected: %s, Got: %s", envOwnerID, eventOwnerID)
+		c.Status(http.StatusOK)
+		return
+	}
+
+	// Validate subscriptionId
+	envSubID := os.Getenv("STRAVA_SUBSCRIPTION_ID")
+	var eventSubID string
+	if sid, ok := event["subscription_id"].(float64); ok {
+		eventSubID = strconv.FormatFloat(sid, 'f', 0, 64)
+	} else if sidStr, ok := event["subscription_id"].(string); ok {
+		eventSubID = sidStr
+	}
+	if envSubID != "" && eventSubID != envSubID {
+		log.Printf("[Security] Security Alert! Subscription ID mismatch. Expected: %s, Got: %s", envSubID, eventSubID)
+		c.Status(http.StatusOK)
+		return
+	}
 
 	if event["object_type"] == "activity" && event["aspect_type"] == "create" {
 		log.Printf("[Webhook] New activity received: %v\n", event["object_id"])

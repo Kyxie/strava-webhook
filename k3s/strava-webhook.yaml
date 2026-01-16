@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: strava-webhook
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: strava-webhook
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: strava-webhook
+subjects:
+  - kind: ServiceAccount
+    name: strava-webhook
+    namespace: strava
+roleRef:
+  kind: Role
+  name: strava-webhook
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: strava-webhook
+spec:
+  selector:
+    app: strava-webhook
+  ports:
+    - port: 8001
+      targetPort: 8001
+      protocol: TCP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strava-webhook
+  namespace: strava
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: strava-webhook
+  template:
+    metadata:
+      labels:
+        app: strava-webhook
+    spec:
+      serviceAccountName: strava-webhook
+      containers:
+        - name: webhook
+          image: kyxie/strava-webhook:v1.0.4 # {"$imagepolicy": "flux-system:strava-webhook-policy"}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - secretRef:
+                name: strava-env

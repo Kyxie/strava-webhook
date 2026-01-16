@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strava
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: strava
+  template:
+    metadata:
+      labels:
+        app: strava
+    spec:
+      containers:
+        - name: strava
+          image: index.docker.io/robiningelbrecht/strava-statistics:v4.3.4 # {"$imagepolicy": "flux-system:strava-policy"}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: strava-env
+          volumeMounts:
+            - name: data-volume
+              mountPath: /var/www/config/app
+              subPath: config
+            - name: data-volume
+              mountPath: /var/www/build
+              subPath: build
+            - name: data-volume
+              mountPath: /var/www/storage/database
+              subPath: database
+            - name: data-volume
+              mountPath: /var/www/storage/files
+              subPath: files
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: strava-data

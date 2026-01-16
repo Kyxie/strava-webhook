@@ -1,0 +1,30 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: strava
+spec:
+  entryPoints:
+    - web
+  routes:
+    # Images
+    - match: Host(`your_hostname`) && (Path(`/files/strava-badge.svg`) || Path(`/files/rides-this-week.svg`) || Path(`/files/monthly-distance.svg`))
+      kind: Rule
+      services:
+        - name: strava
+          port: 80
+
+    # Webhook
+    - match: Host(`your_hostname`) && PathPrefix(`/webhook`)
+      kind: Rule
+      services:
+        - name: strava-webhook
+          port: 8001
+
+    # Basic Auth
+    - match: Host(`your_hostname`)
+      kind: Rule
+      middlewares:
+        - name: strava-basic-auth
+      services:
+        - name: strava
+          port: 80
